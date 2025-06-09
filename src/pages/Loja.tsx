@@ -6,8 +6,24 @@ import poloUniformeImage from '@/assets/images/polo_uniforme_simbolo.png';
 import scrubUniformeImage from '@/assets/images/scrub_uniforme_final.png';
 import profissionaisImage from '@/assets/images/profissionais_uniformizados.png';
 
+// Definição de interfaces para tipagem
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  image: string;
+  description: string;
+  sizes: string[];
+  colors: string[];
+  models: string[];
+}
+
+interface CartItem extends Product {
+  quantity: number;
+}
+
 // Produtos iniciais para demonstração (serão usados apenas se não houver dados no localStorage)
-const initialProducts = [
+const initialProducts: Product[] = [
   { 
     id: 1, 
     name: 'Camisa Polo Empresarial', 
@@ -73,7 +89,7 @@ const initialProducts = [
 function Loja() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [filters, setFilters] = useState({
     size: '',
@@ -81,12 +97,12 @@ function Loja() {
     model: ''
   });
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [shopProducts, setShopProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [shopProducts, setShopProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   
   // Estado para o modal de detalhes do produto
   const [productDetailOpen, setProductDetailOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedOptions, setSelectedOptions] = useState({
     size: '',
     color: '',
@@ -143,7 +159,7 @@ function Loja() {
   }, [filters, shopProducts]);
 
   // Função para adicionar item ao carrinho
-  const addToCart = (product) => {
+  const addToCart = (product: Product) => {
     setCartItems(prev => {
       const existingItem = prev.find(item => item.id === product.id);
       if (existingItem) {
@@ -157,7 +173,7 @@ function Loja() {
   };
 
   // Função para remover item do carrinho
-  const removeFromCart = (productId) => {
+  const removeFromCart = (productId: number) => {
     setCartItems(prev => prev.filter(item => item.id !== productId));
   };
 
@@ -174,7 +190,7 @@ function Loja() {
   };
 
   // Função para abrir o modal de detalhes do produto
-  const openProductDetail = (product) => {
+  const openProductDetail = (product: Product) => {
     setSelectedProduct(product);
     // Inicializa as opções com os primeiros valores disponíveis
     setSelectedOptions({
@@ -192,7 +208,7 @@ function Loja() {
   };
 
   // Função para atualizar as opções selecionadas
-  const updateSelectedOption = (option, value) => {
+  const updateSelectedOption = (option: string, value: string) => {
     setSelectedOptions(prev => ({
       ...prev,
       [option]: value
