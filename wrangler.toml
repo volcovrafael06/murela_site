@@ -1,0 +1,10 @@
+name = "murela-site"
+compatibility_date = "2023-12-01"
+
+# Configuração para servir os arquivos estáticos
+[assets]
+  # Diretório onde estão os arquivos de build
+  directory = "dist"
+  # Configuração para SPA (Single Page Application)
+  # Isso faz com que todas as rotas não encontradas retornem o index.html
+  not_found_handling = "single-page-application"

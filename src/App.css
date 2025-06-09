@@ -1,0 +1,176 @@
+/* Estilos para o formulário de contato */
+.contact-form-modal {
+  @apply fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4;
+  backdrop-filter: blur(5px);
+}
+
+.contact-form-container {
+  @apply bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative;
+  animation: modalFadeIn 0.4s ease-out forwards;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.contact-form-header {
+  @apply text-center mb-6;
+}
+
+.contact-form-header img {
+  @apply h-16 mx-auto mb-4;
+  filter: drop-shadow(0 2px 4px rgba(184, 147, 61, 0.2));
+}
+
+.contact-form-header h3 {
+  @apply text-2xl font-bold text-[#5c4c28];
+}
+
+.contact-form-header p {
+  @apply text-[#8a7a5c];
+}
+
+.contact-form-input {
+  @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#b8933d] transition-all duration-300;
+}
+
+.contact-form-input:focus {
+  @apply border-[#b8933d];
+  box-shadow: 0 0 0 2px rgba(184, 147, 61, 0.1);
+}
+
+.contact-form-label {
+  @apply block text-[#5c4c28] font-medium mb-1;
+}
+
+.contact-form-button {
+  @apply w-full bg-[#b8933d] hover:bg-[#8a6d2f] text-white font-bold py-3 px-4 rounded-lg transition duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1;
+}
+
+.contact-form-button:active {
+  @apply transform scale-95;
+}
+
+.contact-form-success {
+  @apply p-4 rounded-lg bg-green-100 text-green-800 text-center;
+  animation: successPulse 2s infinite;
+}
+
+@keyframes successPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(74, 222, 128, 0);
+  }
+}
+
+.contact-form-error {
+  @apply p-4 rounded-lg bg-red-100 text-red-800 text-center;
+}
+
+.contact-form-close {
+  @apply absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-300;
+}
+
+.contact-form-close:hover {
+  @apply transform rotate-90;
+}
+
+.contact-form-direct {
+  @apply text-center text-sm text-[#8a7a5c] mt-4;
+}
+
+.contact-form-direct a {
+  @apply text-[#b8933d] hover:underline transition-all duration-300;
+}
+
+.contact-form-direct a:hover {
+  @apply text-[#8a6d2f];
+}
+
+/* Estilos para o telefone destacado */
+.phone-highlight {
+  @apply flex items-center justify-center md:justify-end text-[#f5f2e9] hover:text-[#b8933d] transition-all duration-300;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.phone-highlight svg {
+  @apply mr-2 transition-all duration-300;
+}
+
+.phone-highlight:hover svg {
+  @apply transform rotate-12;
+}
+
+/* Animação para o botão de contato */
+.contact-button-pulse {
+  animation: contactPulse 3s infinite;
+}
+
+@keyframes contactPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(184, 147, 61, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(184, 147, 61, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(184, 147, 61, 0);
+  }
+}
+
+/* Melhorias para responsividade */
+@media (max-width: 640px) {
+  .contact-form-modal {
+    @apply p-3;
+  }
+  
+  .contact-form-container {
+    @apply p-4;
+  }
+  
+  .contact-form-header img {
+    @apply h-14;
+  }
+  
+  .contact-form-header h3 {
+    @apply text-xl;
+  }
+  
+  .contact-form-input {
+    @apply py-2;
+  }
+  
+  .contact-form-button {
+    @apply py-2.5;
+  }
+}
+
+/* Animação para o formulário de contato */
+.form-field-animate {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: formFieldFadeIn 0.5s ease-out forwards;
+}
+
+.form-field-animate:nth-child(1) { animation-delay: 0.1s; }
+.form-field-animate:nth-child(2) { animation-delay: 0.2s; }
+.form-field-animate:nth-child(3) { animation-delay: 0.3s; }
+.form-field-animate:nth-child(4) { animation-delay: 0.4s; }
+.form-field-animate:nth-child(5) { animation-delay: 0.5s; }
+.form-field-animate:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes formFieldFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

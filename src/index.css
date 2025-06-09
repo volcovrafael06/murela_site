@@ -1,0 +1,229 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 60 48% 95.9%; /* Bege/Creme Claro - Ex: #F5F5DC */
+    --foreground: 48 83.7% 18%; /* Cinza Escuro/Preto Suave - Ex: #333333 */
+
+    --card: 0 0% 100%; /* Branco */
+    --card-foreground: 48 83.7% 18%; /* Cinza Escuro/Preto Suave */
+
+    --popover: 0 0% 100%; /* Branco */
+    --popover-foreground: 48 83.7% 18%; /* Cinza Escuro/Preto Suave */
+
+    --primary: 43 74% 49%; /* Dourado/Ocre - Ex: #B8860B */
+    --primary-foreground: 60 9.1% 97.8%; /* Branco ou texto claro sobre dourado */
+
+    --secondary: 60 48% 95.9%; /* Bege/Creme Claro */
+    --secondary-foreground: 43 74% 49%; /* Dourado/Ocre sobre bege */
+
+    --muted: 60 4.8% 95.9%; /* Cinza claro/Bege mais suave */
+    --muted-foreground: 60 3.8% 46.1%; /* Cinza médio */
+
+    --accent: 60 4.8% 95.9%; /* Cinza claro/Bege mais suave */
+    --accent-foreground: 43 74% 49%; /* Dourado/Ocre sobre accent */
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 60 9.1% 97.8%;
+
+    --border: 60 5.9% 90%; /* Borda cinza clara */
+    --input: 60 5.9% 90%;
+    --ring: 43 74% 49%; /* Dourado/Ocre para foco */
+
+    --radius: 0.5rem; /* Raio de borda padrão */
+  }
+
+  .dark {
+    /* Definir variáveis para modo escuro se necessário, 
+       mas a apresentação parece usar um tema claro */
+    --background: 48 83.7% 18%; /* Fundo escuro */
+    --foreground: 60 9.1% 97.8%; /* Texto claro */
+
+    --card: 48 83.7% 18%;
+    --card-foreground: 60 9.1% 97.8%;
+
+    --popover: 48 83.7% 18%;
+    --popover-foreground: 60 9.1% 97.8%;
+
+    --primary: 43 74% 49%;
+    --primary-foreground: 60 9.1% 97.8%;
+
+    --secondary: 60 4.8% 95.9%; /* Manter bege ou ajustar */
+    --secondary-foreground: 43 74% 49%;
+
+    --muted: 60 3.8% 46.1%;
+    --muted-foreground: 60 5.9% 90%;
+
+    --accent: 60 3.8% 46.1%;
+    --accent-foreground: 60 9.1% 97.8%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 60 9.1% 97.8%;
+
+    --border: 60 3.8% 46.1%;
+    --input: 60 3.8% 46.1%;
+    --ring: 43 74% 49%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Inter", sans-serif; /* Usar Inter como padrão */
+    scroll-behavior: smooth;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    /* Aplicar fonte Poppins/Montserrat se disponível e configurada no tailwind.config.js */
+    /* @apply font-heading; */ 
+    @apply font-bold text-primary; /* Cor dourada para títulos */
+  }
+  h1 {
+    @apply text-4xl md:text-5xl;
+  }
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
+  p {
+     @apply text-base text-foreground; /* Usar cor de texto principal */
+     line-height: 1.6;
+  }
+}
+
+/* Remover estilos customizados antigos que conflitam com Shadcn/Tailwind */
+/* .btn-primary, .btn-secondary, .feature-card, .murela-card, etc. */
+
+/* Estilos para seções - usar padding do Tailwind */
+section {
+  @apply py-16 md:py-24 px-4 md:px-8;
+}
+
+/* Animações podem ser mantidas ou usar as do tailwindcss-animate */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+/* Ajustar Navbar para usar cores do tema */
+/* Corrigir classes com opacidade inválida */
+.navbar {
+  /* Usar bg-background e adicionar opacidade via rgba ou classe de opacidade */
+  @apply bg-background shadow-md backdrop-blur-sm transition-all duration-300 fixed w-full z-50;
+  background-color: hsla(var(--background), 0.95); /* Aplicar opacidade aqui */
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.navbar-scrolled {
+  @apply shadow-lg;
+  background-color: hsla(var(--background), 0.98); /* Aplicar opacidade aqui */
+}
+
+/* Estilização refinada do menu de navegação */
+.nav-link {
+  @apply relative text-foreground font-medium px-4 py-3 transition-colors duration-300 hover:text-primary;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background-color: hsl(var(--primary));
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.nav-link:hover::after {
+  width: 70%;
+}
+
+.nav-link.active {
+  @apply text-primary font-semibold;
+}
+
+.nav-link.active::after {
+  width: 70%;
+}
+
+/* Ajustar logo para maior visibilidade */
+.logo-image {
+  @apply h-14 md:h-20 w-auto transition-all duration-500;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Reduzir tamanho das imagens nas seções */
+.portfolio-image {
+  @apply w-full h-64 object-cover object-center;
+  max-height: 280px;
+}
+
+.hero-image {
+  @apply w-full h-auto object-cover object-center;
+  max-height: 450px;
+}
+
+.tech-image {
+  @apply w-full h-auto object-cover object-center;
+  max-height: 380px;
+}
+
+/* Scroll to top */
+/* Corrigir classe com opacidade inválida */
+.scroll-top {
+  /* Usar bg-primary e adicionar opacidade no hover via rgba ou classe */
+  @apply fixed bottom-6 right-6 bg-primary text-primary-foreground p-3 rounded-full shadow-lg z-50 opacity-0 invisible transition-all duration-300 hover:opacity-90; /* Usar hover:opacity-90 */
+}
+
+.scroll-top.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Estilização adicional para o menu mobile */
+.mobile-menu {
+  @apply fixed inset-0 bg-background/95 z-40 flex flex-col items-center justify-center transition-transform duration-300 ease-in-out md:hidden;
+  backdrop-filter: blur(8px);
+  border-left: 1px solid hsl(var(--border));
+}
+
+.mobile-menu-link {
+  @apply text-foreground text-xl py-4 font-medium hover:text-primary transition-colors duration-300 capitalize;
+  position: relative;
+}
+
+.mobile-menu-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background-color: hsl(var(--primary));
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.mobile-menu-link:hover::after {
+  width: 50%;
+}
