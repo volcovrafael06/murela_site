@@ -1,5 +1,6 @@
 import './App.css';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import logoImage from '@/assets/logo/murela_logo_official.png'; // Use alias
 // Import updated fabric image
 import fabricImage from '@/assets/images/fabric_v2.png'; 
@@ -11,13 +12,16 @@ import profissionaisImage from '@/assets/images/profissionais_uniformizados.png'
 import processoCriativoImage from '@/assets/images/processo_criativo.png';
 
 // Import icons
-import { Palette, Users, Building, Phone, Mail, MapPin, Facebook, Instagram, Linkedin, X, Menu, CheckCircle, Send } from 'lucide-react';
+import { Palette, Users, Building, Phone, Mail, MapPin, Facebook, Instagram, Linkedin, X, Menu, CheckCircle, Send, ShoppingCart, ShoppingBag, Trash2 } from 'lucide-react';
 
 function App() {
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
   const [contactFormOpen, setContactFormOpen] = useState(false);
+  const [cartItems, setCartItems] = useState([]);
+  const [cartOpen, setCartOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -36,7 +40,7 @@ function App() {
       const scrollPosition = window.scrollY;
       setScrolled(scrollPosition > 50);
       
-      const sections = ['home', 'diferenciais', 'tecnologia', 'portfolio', 'processo', 'contato'];
+      const sections = ['home', 'diferenciais', 'tecnologia', 'loja', 'portfolio', 'processo', 'contato'];
       let currentSection = 'home';
       for (const section of sections) {
         const element = document.getElementById(section);
@@ -55,7 +59,7 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToSection = (sectionId: string) => {
+  const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
     if (element) {
       window.scrollTo({
@@ -69,12 +73,12 @@ function App() {
   const openContactForm = () => setContactFormOpen(true);
   const closeContactForm = () => setContactFormOpen(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Formulário enviado:', formData);
     setFormStatus({ submitted: true, success: true, message: 'Mensagem enviada com sucesso! Entraremos em contato em breve.' });
@@ -104,6 +108,34 @@ function App() {
     { src: scrubUniformeImage, alt: 'Scrub Hospitalar Verde com Símbolo Murela Brands (Imagem Final)', caption: 'Uniformes Hospitalares e Scrubs' }, // Updated alt text for final image
   ];
 
+  const shopProducts = [
+    { id: 1, name: 'Camisa Polo Empresarial', price: 89.90, image: poloUniformeImage, description: 'Camisa polo de alta qualidade para uniformes empresariais.' },
+    { id: 2, name: 'Scrub Hospitalar', price: 129.90, image: scrubUniformeImage, description: 'Uniforme hospitalar confortável e durável para profissionais da saúde.' },
+    { id: 3, name: 'Kit Uniforme Corporativo', price: 249.90, image: profissionaisImage, description: 'Kit completo de uniformes para sua equipe.' },
+  ];
+
+  // Função para adicionar item ao carrinho
+  const addToCart = (product) => {
+    setCartItems(prev => {
+      const existingItem = prev.find(item => item.id === product.id);
+      if (existingItem) {
+        return prev.map(item => 
+          item.id === product.id ? {...item, quantity: item.quantity + 1} : item
+        );
+      } else {
+        return [...prev, {...product, quantity: 1}];
+      }
+    });
+  };
+
+  // Função para remover item do carrinho
+  const removeFromCart = (productId) => {
+    setCartItems(prev => prev.filter(item => item.id !== productId));
+  };
+
+  // Função para calcular o total do carrinho
+  const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+
   return (
     <div className="App bg-background text-foreground">
       <header className={`navbar fixed w-full z-50 transition-all duration-300 ${scrolled ? 'navbar-scrolled' : ''}`}>
@@ -129,14 +161,34 @@ function App() {
                 <span>{item.label}</span>
               </a>
             ))}
+            <a 
+              href="/loja" 
+              className="nav-link capitalize"
+            >
+              <span>Loja Virtual</span>
+            </a>
           </nav>
-          <button 
-            className="md:hidden text-foreground focus:outline-none"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+          <div className="flex items-center space-x-4">
+            <button 
+              className="relative text-foreground focus:outline-none"
+              onClick={() => setCartOpen(!cartOpen)}
+              aria-label="Carrinho de compras"
+            >
+              <ShoppingCart className="h-6 w-6" />
+              {cartItems.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {cartItems.reduce((total, item) => total + item.quantity, 0)}
+                </span>
+              )}
+            </button>
+            <button 
+              className="md:hidden text-foreground focus:outline-none"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
         <div className={`mobile-menu ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
            {[
@@ -156,6 +208,12 @@ function App() {
                 {item.label}
               </a>
             ))}
+            <a 
+              href="/loja" 
+              className="mobile-menu-link"
+            >
+              Loja Virtual
+            </a>
         </div>
       </header>
 
@@ -227,6 +285,43 @@ function App() {
                 <p className="text-muted-foreground">Processo rigoroso em cada etapa da produção, garantindo uniformes de excelência que representam sua marca com distinção.</p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="loja" className="py-16 md:py-24 bg-background">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-primary mb-4">Loja Virtual</h2>
+          <div className="h-1 w-20 mx-auto bg-primary mb-12"></div>
+          <p className="text-muted-foreground text-center max-w-3xl mx-auto mb-16 text-lg">
+            Conheça nossa linha de produtos e faça seu pedido diretamente pelo site. Oferecemos uniformes de alta qualidade para diversos segmentos.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {shopProducts.map((product) => (
+              <div key={product.id} className="bg-card rounded-lg shadow-md overflow-hidden transition duration-300 transform hover:-translate-y-1 hover:shadow-lg">
+                <div className="h-64 overflow-hidden">
+                  <img 
+                    src={product.image} 
+                    alt={product.name} 
+                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" 
+                  />
+                </div>
+                <div className="p-6">
+                  <h3 className="text-xl font-semibold text-card-foreground mb-2">{product.name}</h3>
+                  <p className="text-muted-foreground mb-4">{product.description}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-primary">R$ {product.price.toFixed(2)}</span>
+                    <button 
+                      onClick={() => addToCart(product)}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 px-4 rounded-md transition duration-300 flex items-center gap-2"
+                    >
+                      <ShoppingCart className="h-4 w-4" /> Adicionar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -334,26 +429,26 @@ function App() {
                 <h3 className="text-xl font-semibold text-card-foreground mb-4">Envie uma Mensagem</h3>
                 <form onSubmit={handleSubmit}>
                   <div className="mb-4">
-                    <label htmlFor="name" className="block text-sm font-medium text-card-foreground mb-1">Nome</label>
+                    <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">Nome</label>
                     <input type="text" id="name" name="name" value={formData.name} onChange={handleInputChange} className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background" required />
                   </div>
                   <div className="mb-4">
-                    <label htmlFor="email" className="block text-sm font-medium text-card-foreground mb-1">Email</label>
+                    <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">Email</label>
                     <input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background" required />
                   </div>
                   <div className="mb-4">
-                    <label htmlFor="phone" className="block text-sm font-medium text-card-foreground mb-1">Telefone</label>
+                    <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-1">Telefone</label>
                     <input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background" />
                   </div>
                   <div className="mb-4">
-                    <label htmlFor="company" className="block text-sm font-medium text-card-foreground mb-1">Empresa</label>
+                    <label htmlFor="company" className="block text-sm font-medium text-foreground mb-1">Empresa</label>
                     <input type="text" id="company" name="company" value={formData.company} onChange={handleInputChange} className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background" />
                   </div>
                   <div className="mb-6">
-                    <label htmlFor="message" className="block text-sm font-medium text-card-foreground mb-1">Mensagem</label>
+                    <label htmlFor="message" className="block text-sm font-medium text-foreground mb-1">Mensagem</label>
                     <textarea id="message" name="message" value={formData.message} onChange={handleInputChange} rows={4} className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background" required ></textarea>
                   </div>
-                  <button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-3 px-6 rounded-lg transition duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                  <button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 px-4 rounded-md transition duration-300 w-full flex items-center justify-center gap-2">
                     <Send className="h-4 w-4" /> Enviar Mensagem
                   </button>
                   {formStatus.submitted && (
@@ -369,25 +464,25 @@ function App() {
         </div>
       </section>
 
-      <footer className="bg-foreground text-background py-8">
+      <footer className="py-8 bg-secondary border-t border-border">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-6 md:mb-0 text-center md:text-left">
-              <img src={logoImage} alt="Murela Brands Logo" className="h-16 w-auto mb-4 mx-auto md:mx-0" style={{ filter: 'brightness(0) invert(1)' }} />
-              <p className="text-background/80">Uniformes profissionais de alta qualidade</p>
+            <div className="mb-4 md:mb-0">
+              <img src={logoImage} alt="Murela Brands Logo" className="h-12" />
             </div>
-            <div className="text-center md:text-right">
-              <p className="text-background/80">&copy; {new Date().getFullYear()} Murela Brands. Todos os direitos reservados.</p>
+            <div className="text-muted-foreground text-sm text-center md:text-right">
+              <p>&copy; {new Date().getFullYear()} Murela Brands. Todos os direitos reservados.</p>
+              <p className="mt-1">Uniformes profissionais de alta qualidade para sua empresa.</p>
             </div>
           </div>
         </div>
       </footer>
 
       {contactFormOpen && (
-        <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-background rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg shadow-lg max-w-md w-full">
             <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-semibold text-foreground">Entre em Contato</h3>
                 <button onClick={closeContactForm} className="text-muted-foreground hover:text-foreground" aria-label="Fechar formulário">
                   <X className="h-6 w-6" />
@@ -427,6 +522,90 @@ function App() {
                   </div>
                 )}
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Carrinho de Compras Modal */}
+      {cartOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-foreground">Carrinho de Compras</h3>
+                <button 
+                  onClick={() => setCartOpen(false)} 
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Fechar carrinho"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              {cartItems.length === 0 ? (
+                <div className="text-center py-8">
+                  <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">Seu carrinho está vazio</p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-4 mb-6">
+                    {cartItems.map((item) => (
+                      <div key={item.id} className="flex items-center gap-4 border-b border-border pb-4">
+                        <div className="h-16 w-16 flex-shrink-0 rounded-md overflow-hidden">
+                          <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            className="h-full w-full object-cover" 
+                          />
+                        </div>
+                        <div className="flex-grow">
+                          <h4 className="text-sm font-medium text-foreground">{item.name}</h4>
+                          <div className="flex justify-between items-center mt-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">Qtd: {item.quantity}</span>
+                              <span className="text-sm font-medium text-foreground">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
+                            <button 
+                              onClick={() => removeFromCart(item.id)}
+                              className="text-red-500 hover:text-red-700 transition-colors"
+                              aria-label="Remover item"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="border-t border-border pt-4">
+                    <div className="flex justify-between items-center mb-6">
+                      <span className="text-foreground font-medium">Total</span>
+                      <span className="text-lg font-bold text-primary">R$ {cartTotal.toFixed(2)}</span>
+                    </div>
+                    
+                    <div className="flex gap-4">
+                      <button 
+                        onClick={() => setCartOpen(false)}
+                        className="flex-1 px-4 py-2 border border-input rounded-md hover:bg-accent transition-colors"
+                      >
+                        Continuar Comprando
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setCartOpen(false);
+                          navigate('/checkout');
+                        }}
+                        className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 px-4 rounded-md transition duration-300"
+                      >
+                        Finalizar Pedido
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
