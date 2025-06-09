@@ -346,12 +346,14 @@ function Checkout() {
                     <div className="flex">
                       <input 
                         type="text" 
+                        id="cep"
                         name="cep" 
                         value={addressForm.cep} 
                         onChange={handleAddressChange} 
                         className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" 
                         placeholder="00000000" 
                         maxLength={8}
+                        autoComplete="postal-code"
                       />
                       <button 
                         onClick={fetchAddressByCEP} 
@@ -365,64 +367,76 @@ function Checkout() {
                     <label className="block text-sm font-medium text-muted-foreground mb-1">Rua/Avenida *</label>
                     <input 
                       type="text" 
+                      id="street"
                       name="street" 
                       value={addressForm.street} 
                       onChange={handleAddressChange} 
                       className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" 
                       placeholder="Rua Exemplo"
+                      autoComplete="street-address"
                     />
                   </div>
                   <div className="md:col-span-1">
                     <label className="block text-sm font-medium text-muted-foreground mb-1">Número *</label>
                     <input 
                       type="text" 
+                      id="number"
                       name="number" 
                       value={addressForm.number} 
                       onChange={handleAddressChange} 
                       className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" 
                       placeholder="123"
+                      autoComplete="address-line2"
                     />
                   </div>
                   <div className="md:col-span-1">
                     <label className="block text-sm font-medium text-muted-foreground mb-1">Complemento</label>
                     <input 
                       type="text" 
+                      id="complement"
                       name="complement" 
                       value={addressForm.complement} 
                       onChange={handleAddressChange} 
                       className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" 
                       placeholder="Apto 101"
+                      autoComplete="address-line3"
                     />
                   </div>
                   <div className="md:col-span-1">
                     <label className="block text-sm font-medium text-muted-foreground mb-1">Bairro *</label>
                     <input 
                       type="text" 
+                      id="neighborhood"
                       name="neighborhood" 
                       value={addressForm.neighborhood} 
                       onChange={handleAddressChange} 
                       className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" 
                       placeholder="Bairro"
+                      autoComplete="address-level3"
                     />
                   </div>
                   <div className="md:col-span-1">
                     <label className="block text-sm font-medium text-muted-foreground mb-1">Cidade *</label>
                     <input 
                       type="text" 
+                      id="city"
                       name="city" 
                       value={addressForm.city} 
                       onChange={handleAddressChange} 
                       className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" 
                       placeholder="Cidade"
+                      autoComplete="address-level2"
                     />
                   </div>
                   <div className="md:col-span-1">
                     <label className="block text-sm font-medium text-muted-foreground mb-1">Estado *</label>
                     <select 
+                      id="state"
                       name="state" 
                       value={addressForm.state} 
                       onChange={handleAddressChange} 
                       className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      autoComplete="address-level1"
                     >
                       <option value="">Selecione</option>
                       <option value="AC">Acre</option>
@@ -528,23 +542,27 @@ function Checkout() {
                         <label className="block text-sm font-medium text-muted-foreground mb-1">Número do Cartão *</label>
                         <input 
                           type="text" 
+                          id="card-number"
                           name="number" 
                           value={cardForm.number} 
                           onChange={handleCardChange} 
                           className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" 
                           placeholder="0000 0000 0000 0000"
                           maxLength={19}
+                          autoComplete="cc-number"
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-muted-foreground mb-1">Nome no Cartão *</label>
                         <input 
                           type="text" 
+                          id="card-name"
                           name="name" 
                           value={cardForm.name} 
                           onChange={handleCardChange} 
                           className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" 
                           placeholder="NOME COMO ESTÁ NO CARTÃO"
+                          autoComplete="cc-name"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -552,30 +570,35 @@ function Checkout() {
                           <label className="block text-sm font-medium text-muted-foreground mb-1">Validade *</label>
                           <input 
                             type="text" 
+                            id="card-expiry"
                             name="expiry" 
                             value={cardForm.expiry} 
                             onChange={handleCardChange} 
                             className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" 
                             placeholder="MM/AA"
                             maxLength={5}
+                            autoComplete="cc-exp"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-muted-foreground mb-1">CVV *</label>
                           <input 
                             type="text" 
+                            id="card-cvv"
                             name="cvv" 
                             value={cardForm.cvv} 
                             onChange={handleCardChange} 
                             className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" 
                             placeholder="123"
                             maxLength={4}
+                            autoComplete="cc-csc"
                           />
                         </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-muted-foreground mb-1">Parcelas *</label>
                         <select 
+                          id="card-installments"
                           name="installments" 
                           value={cardForm.installments} 
                           onChange={handleCardChange} 
