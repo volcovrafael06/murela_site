@@ -174,11 +174,18 @@ function Checkout() {
       const response = await processPayment(paymentRequest);
       
       if (response.success) {
-        setMessage({ type: 'success', text: 'Pagamento aprovado!' });
-        setStep(4); // Avançar para confirmação
+        setMessage({ type: 'success', text: response.message || 'Redirecionando para o checkout do EFI...' });
+        // Não avançamos para o passo 4 automaticamente, pois o pagamento será finalizado no EFI
+        // O usuário será redirecionado para o checkout do EFI em uma nova janela
         
-        // Limpar carrinho após confirmação
-        localStorage.removeItem('cartItems');
+        // Armazenamos os dados do pedido no localStorage para recuperação posterior
+        localStorage.setItem('pendingOrder', JSON.stringify({
+          items: cartItems,
+          total: getTotalWithShipping(),
+          shipping: selectedOption,
+          address: addressForm,
+          paymentMethod
+        }));
       } else {
         setMessage({ type: 'error', text: response.message || 'Erro ao processar o pagamento.' });
       }

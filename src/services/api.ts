@@ -78,19 +78,33 @@ export const processPayment = async (request: PaymentRequest): Promise<PaymentRe
   return new Promise((resolve) => {
     // Simulando um tempo de processamento
     setTimeout(() => {
+      // Abre a janela do EFI checkout
+      const efiCheckoutUrl = 'https://checkout.efi.com.br/?' + new URLSearchParams({
+        merchant_id: 'MURELA_MERCHANT',
+        transaction_amount: request.total.toString(),
+        currency: 'BRL',
+        description: 'Compra Murela Brands',
+        customer_name: request.customer.name,
+        customer_email: request.customer.email,
+        redirect_url: window.location.origin + '/checkout/success'
+      }).toString();
+      
+      // Abre o checkout do EFI em uma nova janela
+      window.open(efiCheckoutUrl, '_blank');
+      
       // Simulando uma resposta de sucesso
       if (request.paymentMethod === 'credit_card') {
         resolve({
           success: true,
           transactionId: `GN-${Math.floor(Math.random() * 1000000)}`,
-          message: 'Pagamento aprovado com sucesso!'
+          message: 'Redirecionando para o checkout do EFI...'
         });
       } else if (request.paymentMethod === 'pix') {
         resolve({
           success: true,
           transactionId: `PIX-${Math.floor(Math.random() * 1000000)}`,
           pixCode: 'SIMULACAO_PIX_CODE_00001122334455667788',
-          message: 'Pix gerado com sucesso!'
+          message: 'Redirecionando para o checkout do EFI...'
         });
       } else if (request.paymentMethod === 'boleto') {
         resolve({
@@ -98,7 +112,7 @@ export const processPayment = async (request: PaymentRequest): Promise<PaymentRe
           transactionId: `BOL-${Math.floor(Math.random() * 1000000)}`,
           boletoUrl: 'https://exemplo.com/boleto',
           boletoCode: '03399.63290 64000.000006 00125.201020 4 56140000017832',
-          message: 'Boleto gerado com sucesso!'
+          message: 'Redirecionando para o checkout do EFI...'
         });
       } else {
         resolve({

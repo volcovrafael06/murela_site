@@ -376,6 +376,8 @@ function Loja() {
                 <div>
                   <h3 className="text-lg font-medium mb-3">Modelo</h3>
                   <select 
+                    id="model-filter"
+                    name="model-filter"
                     value={filters.model}
                     onChange={(e) => setFilters(prev => ({ ...prev, model: e.target.value }))}
                     className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background"
