@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CartItem } from './Loja';
 import { Link, useNavigate } from 'react-router-dom';
 import logoImage from '@/assets/logo/murela_logo_official.png';
 import { ShoppingCart, ArrowLeft, CreditCard, Truck, MapPin, Check, X, AlertCircle } from 'lucide-react';
@@ -6,7 +7,7 @@ import { fetchAddressByCEP, calculateShipping, processPayment } from '@/services
 
 function Checkout() {
   const navigate = useNavigate();
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartTotal, setCartTotal] = useState(0);
   const [step, setStep] = useState(1); // 1: Endereço, 2: Frete, 3: Pagamento, 4: Confirmação
   

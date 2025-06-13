@@ -14,7 +14,6 @@ function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
   const [contactFormOpen, setContactFormOpen] = useState(false);
-  const [cartItems, setCartItems] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -52,7 +51,7 @@ function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToSection = (sectionId) => {
+  const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
       window.scrollTo({
@@ -66,12 +65,12 @@ function Home() {
   const openContactForm = () => setContactFormOpen(true);
   const closeContactForm = () => setContactFormOpen(false);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Formulário enviado:', formData);
     setFormStatus({ submitted: true, success: true, message: 'Mensagem enviada com sucesso! Entraremos em contato em breve.' });
@@ -137,11 +136,7 @@ function Home() {
               aria-label="Loja Virtual"
             >
               <ShoppingCart className="h-6 w-6" />
-              {cartItems.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {cartItems.reduce((total, item) => total + item.quantity, 0)}
-                </span>
-              )}
+
             </Link>
             <button 
               className="md:hidden text-foreground focus:outline-none"
