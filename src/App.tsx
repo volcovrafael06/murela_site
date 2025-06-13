@@ -12,7 +12,7 @@ import profissionaisImage from '@/assets/images/profissionais_uniformizados.png'
 import processoCriativoImage from '@/assets/images/processo_criativo.png';
 
 // Import icons
-import { Palette, Users, Building, Phone, Mail, MapPin, Facebook, Instagram, Linkedin, X, Menu, CheckCircle, Send, ShoppingCart, ShoppingBag, Trash2 } from 'lucide-react';
+import { Palette, Users, Building, Phone, Mail, MapPin, Facebook, Instagram, Linkedin, X, Menu, CheckCircle, Send } from 'lucide-react';
 
 function App() {
   const navigate = useNavigate();
@@ -20,8 +20,6 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
   const [contactFormOpen, setContactFormOpen] = useState(false);
-  const [cartItems, setCartItems] = useState([]);
-  const [cartOpen, setCartOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -59,7 +57,7 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToSection = (sectionId) => {
+  const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
       window.scrollTo({
@@ -73,12 +71,12 @@ function App() {
   const openContactForm = () => setContactFormOpen(true);
   const closeContactForm = () => setContactFormOpen(false);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Formulário enviado:', formData);
     setFormStatus({ submitted: true, success: true, message: 'Mensagem enviada com sucesso! Entraremos em contato em breve.' });
@@ -98,7 +96,7 @@ function App() {
   const processoData = [
     { title: 'Desenvolvimento Exclusivo', text: 'Layouts únicos para cada cliente.' }, 
     { title: 'Consultoria', text: 'Alinhamento de identidade visual.' }, 
-    { title: 'Mockups e Amostras', text: 'Aprovação antes da produção.' } 
+    { title: 'Mockups e Amostras', 'text': 'Aprovação antes da produção.' } 
   ];
 
   // Updated Portfolio Data with final user image
@@ -108,33 +106,7 @@ function App() {
     { src: scrubUniformeImage, alt: 'Scrub Hospitalar Verde com Símbolo Murela Brands (Imagem Final)', caption: 'Uniformes Hospitalares e Scrubs' }, // Updated alt text for final image
   ];
 
-  const shopProducts = [
-    { id: 1, name: 'Camisa Polo Empresarial', price: 89.90, image: poloUniformeImage, description: 'Camisa polo de alta qualidade para uniformes empresariais.' },
-    { id: 2, name: 'Scrub Hospitalar', price: 129.90, image: scrubUniformeImage, description: 'Uniforme hospitalar confortável e durável para profissionais da saúde.' },
-    { id: 3, name: 'Kit Uniforme Corporativo', price: 249.90, image: profissionaisImage, description: 'Kit completo de uniformes para sua equipe.' },
-  ];
 
-  // Função para adicionar item ao carrinho
-  const addToCart = (product) => {
-    setCartItems(prev => {
-      const existingItem = prev.find(item => item.id === product.id);
-      if (existingItem) {
-        return prev.map(item => 
-          item.id === product.id ? {...item, quantity: item.quantity + 1} : item
-        );
-      } else {
-        return [...prev, {...product, quantity: 1}];
-      }
-    });
-  };
-
-  // Função para remover item do carrinho
-  const removeFromCart = (productId) => {
-    setCartItems(prev => prev.filter(item => item.id !== productId));
-  };
-
-  // Função para calcular o total do carrinho
-  const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
 
   return (
     <div className="App bg-background text-foreground">
@@ -144,7 +116,7 @@ function App() {
             <img src={logoImage} alt="Murela Brands Logo" className="logo-image" />
           </div>
           <nav className="hidden md:flex space-x-2">
-            {[
+            {[ 
               { id: 'home', label: 'Início' },
               { id: 'diferenciais', label: 'Diferenciais' },
               { id: 'tecnologia', label: 'Tecnologia' },
@@ -170,18 +142,6 @@ function App() {
           </nav>
           <div className="flex items-center space-x-4">
             <button 
-              className="relative text-foreground focus:outline-none"
-              onClick={() => setCartOpen(!cartOpen)}
-              aria-label="Carrinho de compras"
-            >
-              <ShoppingCart className="h-6 w-6" />
-              {cartItems.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {cartItems.reduce((total, item) => total + item.quantity, 0)}
-                </span>
-              )}
-            </button>
-            <button 
               className="md:hidden text-foreground focus:outline-none"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
@@ -191,7 +151,7 @@ function App() {
           </div>
         </div>
         <div className={`mobile-menu ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-           {[
+           {[ 
               { id: 'home', label: 'Início' },
               { id: 'diferenciais', label: 'Diferenciais' },
               { id: 'tecnologia', label: 'Tecnologia' },
@@ -298,7 +258,7 @@ function App() {
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {shopProducts.map((product) => (
+            {/* shopProducts.map((product) => (
               <div key={product.id} className="bg-card rounded-lg shadow-md overflow-hidden transition duration-300 transform hover:-translate-y-1 hover:shadow-lg">
                 <div className="h-64 overflow-hidden">
                   <img 
@@ -321,7 +281,8 @@ function App() {
                   </div>
                 </div>
               </div>
-            ))}
+            )) */}
+            <p className="text-muted-foreground text-center col-span-full">Em breve, nossa loja virtual estará disponível com uma variedade de produtos!</p>
           </div>
         </div>
       </section>

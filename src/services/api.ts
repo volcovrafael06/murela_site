@@ -89,6 +89,7 @@ export const processPayment = async (request: PaymentRequest): Promise<PaymentRe
         redirect_url: window.location.origin + '/checkout/success'
       }).toString();
       
+      console.log('EFI Checkout URL:', efiCheckoutUrl);
       // Abre o checkout do EFI em uma nova janela
       window.open(efiCheckoutUrl, '_blank');
       
