@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import logoImage from '@/assets/logo/murela_logo_official.png';
-import { ShoppingCart, ShoppingBag, X, Menu, Trash2, ArrowLeft, Filter } from 'lucide-react';
+import { ShoppingCart, ShoppingBag, X, Menu, Trash2, ArrowLeft, Filter, Upload } from 'lucide-react';
 import poloUniformeImage from '@/assets/images/polo_uniforme_simbolo.png';
 import scrubUniformeImage from '@/assets/images/scrub_uniforme_final.png';
 import profissionaisImage from '@/assets/images/profissionais_uniformizados.png';
+import { uploadImage } from '@/services/api';
 
 // Definição de interfaces para tipagem
 interface Product {
@@ -89,6 +89,8 @@ const initialProducts: Product[] = [
   },
 ];
 
+import { useState, useEffect } from 'react';
+
 function Loja() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -111,6 +113,28 @@ function Loja() {
     color: '',
     model: ''
   });
+
+  // Novos estados para o formulário de adição de produto
+  const [newProductFormOpen, setNewProductFormOpen] = useState(false);
+  const [newProduct, setNewProduct] = useState<Omit<Product, 'id' | 'image'> & { imageFile: File | null; imageUrlPreview: string | null }> ({
+    name: '',
+    price: 0,
+    description: '',
+    sizes: [],
+    colors: [],
+    models: [],
+    imageFile: null,
+    imageUrlPreview: null,
+  });
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Verificar status de admin no localStorage
+  useEffect(() => {
+    const adminStatus = localStorage.getItem('isAdminAuthenticated');
+    setIsAdmin(adminStatus === 'true');
+  }, []);
 
   // Carregar produtos do localStorage ou usar os iniciais
   useEffect(() => {
@@ -182,12 +206,12 @@ function Loja() {
   // Função para abrir o modal de detalhes do produto
   const openProductDetail = (product: Product) => {
     setSelectedProduct(product);
-    // Inicializa as opções com os primeiros valores disponíveis
-    setSelectedOptions({
-      size: product.sizes.length > 0 ? product.sizes[0] : '',
-      color: product.colors.length > 0 ? product.colors[0] : '',
-      model: product.models.length > 0 ? product.models[0] : ''
-    });
+    // Inicializa as opções com os primeiros valores disponíveis ou mantém as atuais se já selecionadas
+    setSelectedOptions(prevOptions => ({
+      size: product.sizes.length > 0 ? (prevOptions.size && product.sizes.includes(prevOptions.size) ? prevOptions.size : product.sizes[0]) : '',
+      color: product.colors.length > 0 ? (prevOptions.color && product.colors.includes(prevOptions.color) ? prevOptions.color : product.colors[0]) : '',
+      model: product.models.length > 0 ? (prevOptions.model && product.models.includes(prevOptions.model) ? prevOptions.model : product.models[0]) : ''
+    }));
     setProductDetailOpen(true);
   };
 
@@ -205,6 +229,40 @@ function Loja() {
     }));
   };
 
+  // Função para lidar com o upload da imagem
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setNewProduct(prev => ({
+        ...prev,
+        imageFile: file,
+        imageUrlPreview: URL.createObjectURL(file)
+      }));
+      setUploadError(null);
+    } else {
+      setNewProduct(prev => ({ ...prev, imageFile: null, imageUrlPreview: null }));
+    }
+  };
+
+  // Função para lidar com mudanças nos inputs do formulário de novo produto
+  const handleNewProductChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setNewProduct(prev => ({
+      ...prev,
+      [name]: name === 'price' ? parseFloat(value) : value
+    }));
+  };
+
+  // Função para lidar com mudanças nos arrays (sizes, colors, models)
+  const handleNewProductArrayChange = (name: keyof typeof newProduct, value: string) => {
+    setNewProduct(prev => ({
+      ...prev,
+      [name]: (prev[name] as string[]).includes(value) ?
+        (prev[name] as string[]).filter(item => item !== value) :
+        [...(prev[name] as string[]), value]
+    }));
+  };
+
   // Função para adicionar o produto ao carrinho com as opções selecionadas
   const addToCartWithOptions = () => {
     if (!selectedProduct) return;
@@ -218,7 +276,7 @@ function Loja() {
     
     setCartItems(prev => {
       // Cria um ID único para o produto com as opções selecionadas
-      const uniqueId = `${productWithOptions.id}-${selectedOptions.size}-${selectedOptions.color}-${selectedOptions.model}`;
+      // const uniqueId = `${productWithOptions.id}-${selectedOptions.size}-${selectedOptions.color}-${selectedOptions.model}`;
       const existingItemIndex = prev.findIndex(item => 
         item.id === productWithOptions.id && 
         item.selectedSize === selectedOptions.size && 
@@ -233,7 +291,7 @@ function Loja() {
         return updatedItems;
       } else {
         // Caso contrário, adiciona um novo item
-        return [...prev, {...productWithOptions, quantity: 1, uniqueId}];
+        return [...prev, {...productWithOptions, quantity: 1}];
       }
     });
     
@@ -243,8 +301,90 @@ function Loja() {
     setCartOpen(true);
   };
 
+  // Função para adicionar um novo produto
+  const addNewProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUploadingImage(true);
+    setUploadError(null);
+
+    if (!newProduct.imageFile) {
+      setUploadError('Por favor, selecione uma imagem para o produto.');
+      setUploadingImage(false);
+      return;
+    }
+
+    try {
+      const uploadResponse = await uploadImage(newProduct.imageFile);
+      if (uploadResponse.success && uploadResponse.url) {
+        const newProductId = shopProducts.length > 0 ? Math.max(...shopProducts.map(p => p.id)) + 1 : 1;
+        const productToAdd: Product = {
+          id: newProductId,
+          name: newProduct.name,
+          price: newProduct.price,
+          description: newProduct.description,
+          sizes: newProduct.sizes,
+          colors: newProduct.colors,
+          models: newProduct.models,
+          image: uploadResponse.url,
+        };
+
+        setShopProducts(prev => {
+          const updatedProducts = [...prev, productToAdd];
+          localStorage.setItem('shopProducts', JSON.stringify(updatedProducts));
+          return updatedProducts;
+        });
+
+        // Limpar formulário e fechar modal
+        setNewProduct({
+          name: '',
+          price: 0,
+          description: '',
+          sizes: [],
+          colors: [],
+          models: [],
+          imageFile: null,
+          imageUrlPreview: null,
+        });
+        setNewProductFormOpen(false);
+      } else {
+        setUploadError(uploadResponse.message || 'Erro ao fazer upload da imagem.');
+      }
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      setUploadError('Erro ao fazer upload da imagem. Tente novamente.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const updateQuantity = (productId: number, amount: number) => {
+    setCartItems(prev =>
+      prev.map(item =>
+        item.id === productId
+          ? { ...item, quantity: Math.max(0, item.quantity + amount) } // Ensure quantity doesn't go below 0
+          : item
+      ).filter(item => item.quantity > 0) // Remove item if quantity is 0
+    );
+  };
+
+  const addToCart = (product: Product) => {
+    setCartItems(prev => {
+      const existingItem = prev.find(item => item.id === product.id && !item.selectedSize && !item.selectedColor && !item.selectedModel); // Check for item without specific options
+      if (existingItem) {
+        return prev.map(item =>
+          item.id === product.id && !item.selectedSize && !item.selectedColor && !item.selectedModel
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+    setCartOpen(true); // Optionally open cart
+  };
+
   return (
-    <div className="App bg-background text-foreground">
+    <>
+      <div className="App bg-background text-foreground">
       <header className={`navbar fixed w-full z-50 transition-all duration-300 ${scrolled ? 'navbar-scrolled' : ''}`}>
         <div className="container mx-auto px-4 flex justify-between items-center">
           <div className="logo-container">
@@ -276,13 +416,6 @@ function Loja() {
                 </span>
               )}
             </button>
-            <button 
-              className="md:hidden text-foreground focus:outline-none"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
           </div>
         </div>
         <div className={`mobile-menu ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -292,366 +425,232 @@ function Loja() {
         </div>
       </header>
 
+      {/* Modal de Adicionar Novo Produto */}
+      {newProductFormOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card p-6 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
+            <button onClick={() => setNewProductFormOpen(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+              <X className="h-6 w-6" />
+            </button>
+            <h2 className="text-2xl font-bold mb-6">Adicionar Novo Produto</h2>
+            <form onSubmit={addNewProduct} className="space-y-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-muted-foreground">Nome do Produto</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={newProduct.name}
+                  onChange={handleNewProductChange}
+                  className="mt-1 block w-full px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-background"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="price" className="block text-sm font-medium text-muted-foreground">Preço</label>
+                <input
+                  type="number"
+                  id="price"
+                  name="price"
+                  value={newProduct.price}
+                  onChange={handleNewProductChange}
+                  className="mt-1 block w-full px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-background"
+                  step="0.01"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-muted-foreground">Descrição</label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={newProduct.description}
+                  onChange={handleNewProductChange}
+                  rows={3}
+                  className="mt-1 block w-full px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-background"
+                  required
+                ></textarea>
+              </div>
+              
+              {/* Upload de Imagem */}
+              <div>
+                <label htmlFor="imageUpload" className="block text-sm font-medium text-muted-foreground mb-2">Imagem do Produto</label>
+                <input
+                  type="file"
+                  id="imageUpload"
+                  name="imageUpload"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                />
+                {newProduct.imageUrlPreview && (
+                  <div className="mt-4">
+                    <img src={newProduct.imageUrlPreview} alt="Pré-visualização da Imagem" className="max-w-xs h-auto rounded-md shadow-md" />
+                  </div>
+                )}
+                {uploadError && <p className="text-red-500 text-sm mt-2">{uploadError}</p>}
+              </div>
+
+              {/* Tamanhos */}
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">Tamanhos Disponíveis</h3>
+                <div className="flex flex-wrap gap-2">
+                  {['P', 'M', 'G', 'GG', 'XG'].map(size => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => handleNewProductArrayChange('sizes', size)}
+                      className={`px-3 py-1 border rounded-md transition-colors ${newProduct.sizes.includes(size) ? 'bg-primary text-primary-foreground border-primary' : 'border-input hover:bg-accent'}`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cores */}
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">Cores Disponíveis</h3>
+                <div className="flex flex-wrap gap-2">
+                  {['Azul', 'Preto', 'Branco', 'Vermelho', 'Verde', 'Rosa', 'Cinza', 'Laranja', 'Azul Claro', 'Listrado'].map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => handleNewProductArrayChange('colors', color)}
+                      className={`px-3 py-1 border rounded-md transition-colors ${newProduct.colors.includes(color) ? 'bg-primary text-primary-foreground border-primary' : 'border-input hover:bg-accent'}`}
+                    >
+                      {color}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Modelos */}
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">Modelos Disponíveis</h3>
+                <div className="flex flex-wrap gap-2">
+                  {['Slim', 'Regular', 'Tradicional', 'Unissex', 'Feminino', 'Masculino', 'Executivo', 'Casual', 'Operacional', 'Manga Longa', 'Manga Curta', 'Com Refletivo', 'Sem Refletivo'].map(model => (
+                    <button
+                      key={model}
+                      type="button"
+                      onClick={() => handleNewProductArrayChange('models', model)}
+                      className={`px-3 py-1 border rounded-md transition-colors ${newProduct.models.includes(model) ? 'bg-primary text-primary-foreground border-primary' : 'border-input hover:bg-accent'}`}
+                    >
+                      {model}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-4 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setNewProductFormOpen(false)}
+                  className="bg-secondary text-foreground hover:bg-secondary/80 font-bold py-2 px-4 rounded-md transition duration-300"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 px-4 rounded-md transition duration-300"
+                  disabled={uploadingImage}
+                >
+                  {uploadingImage ? 'Adicionando...' : 'Adicionar Produto'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+
+
       <main className="pt-32 pb-20">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-8">
             <div className="flex items-center gap-4">
               <Link to="/" className="flex items-center text-primary hover:text-primary/80 transition-colors">
                 <ArrowLeft className="h-5 w-5 mr-1" />
-                <span>Voltar para o site</span>
+                Voltar
               </Link>
               <h1 className="text-3xl md:text-4xl font-bold text-primary">Loja Virtual</h1>
             </div>
-            <button 
-              onClick={() => setFiltersOpen(!filtersOpen)}
-              className="md:hidden flex items-center gap-2 bg-secondary px-4 py-2 rounded-md"
-            >
-              <Filter className="h-4 w-4" />
-              <span>Filtros</span>
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => setNewProductFormOpen(true)}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 px-4 rounded-md transition duration-300"
+              >
+                Adicionar Novo Produto
+              </button>
+            )}
           </div>
 
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Filtros - Visível em desktop, oculto em mobile até clicar no botão */}
-            <div className={`
-              md:w-1/4 bg-card p-6 rounded-lg shadow-md h-fit
-              ${filtersOpen ? 'block' : 'hidden'} md:block
-              fixed md:static inset-0 z-40 md:z-auto bg-background md:bg-card
-              overflow-auto md:overflow-visible pt-20 md:pt-6
-            `}>
-              <div className="flex justify-between items-center mb-6 md:hidden">
-                <h2 className="text-xl font-semibold">Filtros</h2>
-                <button 
-                  onClick={() => setFiltersOpen(false)}
-                  className="text-muted-foreground hover:text-foreground"
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredProducts.map((product: Product) => (
+              <div key={product.id} className="bg-card rounded-lg shadow-lg overflow-hidden flex flex-col">
+                <div 
+                  className="relative w-full h-48 bg-muted flex items-center justify-center cursor-pointer"
+                  onClick={() => openProductDetail(product)}
                 >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-              
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Tamanho</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {sizeOptions.map(size => (
+                  {product.image ? (
+                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-muted-foreground text-sm">Sem Imagem</div>
+                  )}
+                </div>
+                <div className="p-4 flex-grow flex flex-col">
+                  <h3 
+                    className="text-xl font-semibold text-foreground mb-2 cursor-pointer"
+                    onClick={() => openProductDetail(product)}
+                  >
+                    {product.name}
+                  </h3>
+                  <p className="text-muted-foreground text-sm mb-2 line-clamp-2">{product.description}</p>
+                  <p className="text-primary text-lg font-bold mb-4">R$ {product.price.toFixed(2)}</p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {product.sizes && product.sizes.map((size: string) => (
+                      <span key={size} className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full">{size}</span>
+                    ))}
+                    {product.colors && product.colors.map((color: string) => (
+                      <span key={color} className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full">{color}</span>
+                    ))}
+                    {product.models && product.models.map((model: string) => (
+                      <span key={model} className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full">{model}</span>
+                    ))}
+                  </div>
+                  <div className="mt-auto flex items-center justify-between">
+                    <div className="flex items-center border border-input rounded-md">
                       <button
-                        key={size}
-                        onClick={() => setFilters(prev => ({ ...prev, size: prev.size === size ? '' : size }))} 
-                        className={`px-3 py-1 border rounded-md transition-colors ${filters.size === size ? 'bg-primary text-primary-foreground border-primary' : 'border-input hover:bg-accent'}`}
+                        onClick={() => updateQuantity(product.id, -1)}
+                        className="px-3 py-1 text-foreground hover:bg-accent rounded-l-md"
                       >
-                        {size}
+                        -
                       </button>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Cor</h3>
-                  <div className="space-y-2">
-                    {colorOptions.map(color => (
-                      <div key={color} className="flex items-center">
-                        <input 
-                          type="checkbox" 
-                          id={`color-${color}`} 
-                          checked={filters.color === color}
-                          onChange={() => setFilters(prev => ({ ...prev, color: prev.color === color ? '' : color }))}
-                          className="mr-2 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <label htmlFor={`color-${color}`} className="text-sm">{color}</label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Modelo</h3>
-                  <select 
-                    id="model-filter"
-                    name="model-filter"
-                    value={filters.model}
-                    onChange={(e) => setFilters(prev => ({ ...prev, model: e.target.value }))}
-                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background"
-                  >
-                    <option value="">Todos os modelos</option>
-                    {modelOptions.map(model => (
-                      <option key={model} value={model}>{model}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <button 
-                  onClick={clearFilters}
-                  className="w-full bg-secondary hover:bg-secondary/80 text-foreground py-2 px-4 rounded-md transition-colors"
-                >
-                  Limpar Filtros
-                </button>
-              </div>
-            </div>
-            
-            {/* Lista de Produtos */}
-            <div className="md:w-3/4">
-              {filteredProducts.length === 0 ? (
-                <div className="text-center py-12 bg-card rounded-lg">
-                  <ShoppingBag className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h2 className="text-xl font-semibold mb-2">Nenhum produto encontrado</h2>
-                  <p className="text-muted-foreground mb-4">Tente ajustar os filtros para encontrar o que procura.</p>
-                  <button 
-                    onClick={clearFilters}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 px-4 rounded-md transition duration-300"
-                  >
-                    Limpar Filtros
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {filteredProducts.map((product) => (
-                    <div key={product.id} className="bg-card rounded-lg shadow-md overflow-hidden transition duration-300 transform hover:-translate-y-1 hover:shadow-lg cursor-pointer">
-                      <div className="h-64 overflow-hidden" onClick={() => openProductDetail(product)}>
-                        <img 
-                          src={product.image} 
-                          alt={product.name} 
-                          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" 
-                        />
-                      </div>
-                      <div className="p-6">
-                        <h3 
-                          className="text-xl font-semibold text-card-foreground mb-2 hover:text-primary transition-colors"
-                          onClick={() => openProductDetail(product)}
-                        >
-                          {product.name}
-                        </h3>
-                        <p className="text-muted-foreground mb-4">{product.description}</p>
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {product.sizes.map(size => (
-                            <span key={size} className="text-xs bg-secondary px-2 py-1 rounded">{size}</span>
-                          ))}
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-primary">R$ {product.price.toFixed(2)}</span>
-                          <button 
-                            onClick={() => openProductDetail(product)}
-                            className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 px-4 rounded-md transition duration-300 flex items-center gap-2"
-                          >
-                            <ShoppingCart className="h-4 w-4" /> Adicionar
-                          </button>
-                        </div>
-                      </div>
+                      <span className="px-3 py-1 border-x border-input text-foreground">
+                        {cartItems.find(item => item.id === product.id)?.quantity || 0}
+                      </span>
+                      <button
+                        onClick={() => updateQuantity(product.id, 1)}
+                        className="px-3 py-1 text-foreground hover:bg-accent rounded-r-md"
+                      >
+                        +
+                      </button>
                     </div>
-                  ))}
+                    <button
+                      onClick={() => addToCart(product)}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 px-4 rounded-md transition duration-300"
+                    >
+                      Adicionar ao Carrinho
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </main>
-
-      <footer className="py-8 bg-secondary border-t border-border">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-4 md:mb-0">
-              <img src={logoImage} alt="Murela Brands Logo" className="h-12" />
-            </div>
-            <div className="text-muted-foreground text-sm text-center md:text-right">
-              <p>&copy; {new Date().getFullYear()} Murela Brands. Todos os direitos reservados.</p>
-              <p className="mt-1">Uniformes profissionais de alta qualidade para sua empresa.</p>
-              <Link to="/admin" className="text-primary hover:text-primary/80 transition-colors text-xs mt-2 inline-block">
-                Área Administrativa
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
-
-      {/* Carrinho de Compras Modal */}
-      {cartOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-semibold text-foreground">Carrinho de Compras</h3>
-                <button 
-                  onClick={() => setCartOpen(false)} 
-                  className="text-muted-foreground hover:text-foreground"
-                  aria-label="Fechar carrinho"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-              
-              {cartItems.length === 0 ? (
-                <div className="text-center py-8">
-                  <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Seu carrinho está vazio</p>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-4 mb-6">
-                    {cartItems.map((item) => (
-                      <div key={item.id} className="flex items-center gap-4 border-b border-border pb-4">
-                        <div className="h-16 w-16 flex-shrink-0 rounded-md overflow-hidden">
-                          <img 
-                            src={item.image} 
-                            alt={item.name} 
-                            className="h-full w-full object-cover" 
-                          />
-                        </div>
-                        <div className="flex-grow">
-                          <h4 className="text-sm font-medium text-foreground">{item.name}</h4>
-                          <div className="flex justify-between items-center mt-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">Qtd: {item.quantity}</span>
-                              <span className="text-sm font-medium text-foreground">R$ {(item.price * item.quantity).toFixed(2)}</span>
-                            </div>
-                            <button 
-                              onClick={() => removeFromCart(item.id)}
-                              className="text-red-500 hover:text-red-700 transition-colors"
-                              aria-label="Remover item"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="border-t border-border pt-4">
-                    <div className="flex justify-between items-center mb-6">
-                      <span className="text-foreground font-medium">Total</span>
-                      <span className="text-lg font-bold text-primary">R$ {cartTotal.toFixed(2)}</span>
-                    </div>
-                    
-                    <div className="flex gap-4">
-                      <button 
-                        onClick={() => setCartOpen(false)}
-                        className="flex-1 px-4 py-2 border border-input rounded-md hover:bg-accent transition-colors"
-                      >
-                        Continuar Comprando
-                      </button>
-                      <Link 
-                        to="/checkout"
-                        onClick={() => {
-                          setCartOpen(false);
-                        }}
-                        className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 px-4 rounded-md transition duration-300 text-center"
-                      >
-                        Finalizar Pedido
-                      </Link>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Detalhes do Produto */}
-      {productDetailOpen && selectedProduct && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-background rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-semibold text-foreground">Detalhes do Produto</h3>
-                <button 
-                  onClick={closeProductDetail} 
-                  className="text-muted-foreground hover:text-foreground"
-                  aria-label="Fechar detalhes"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="h-80 overflow-hidden rounded-lg">
-                  <img 
-                    src={selectedProduct.image} 
-                    alt={selectedProduct.name} 
-                    className="w-full h-full object-cover" 
-                  />
-                </div>
-                
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground mb-2">{selectedProduct.name}</h2>
-                  <p className="text-lg font-bold text-primary mb-4">R$ {selectedProduct.price.toFixed(2)}</p>
-                  
-                  <div className="mb-6">
-                    <p className="text-muted-foreground">{selectedProduct.description}</p>
-                  </div>
-                  
-                  {selectedProduct.sizes.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-foreground mb-2">Tamanho</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedProduct.sizes.map(size => (
-                          <button
-                            key={size}
-                            onClick={() => updateSelectedOption('size', size)}
-                            className={`px-3 py-1 border rounded-md transition-colors ${selectedOptions.size === size ? 'bg-primary text-primary-foreground border-primary' : 'border-input hover:bg-accent'}`}
-                          >
-                            {size}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {selectedProduct.colors.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-foreground mb-2">Cor</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedProduct.colors.map(color => (
-                          <button
-                            key={color}
-                            onClick={() => updateSelectedOption('color', color)}
-                            className={`px-3 py-1 border rounded-md transition-colors ${selectedOptions.color === color ? 'bg-primary text-primary-foreground border-primary' : 'border-input hover:bg-accent'}`}
-                          >
-                            {color}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {selectedProduct.models.length > 0 && (
-                    <div className="mb-6">
-                      <h4 className="text-sm font-medium text-foreground mb-2">Modelo</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedProduct.models.map(model => (
-                          <button
-                            key={model}
-                            onClick={() => updateSelectedOption('model', model)}
-                            className={`px-3 py-1 border rounded-md transition-colors ${selectedOptions.model === model ? 'bg-primary text-primary-foreground border-primary' : 'border-input hover:bg-accent'}`}
-                          >
-                            {model}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="flex gap-4 mt-4">
-                    <button 
-                      onClick={closeProductDetail}
-                      className="flex-1 px-4 py-2 border border-input rounded-md hover:bg-accent transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <button 
-                      onClick={addToCartWithOptions}
-                      className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 px-4 rounded-md transition duration-300 flex items-center justify-center gap-2"
-                    >
-                      <ShoppingCart className="h-4 w-4" /> Adicionar ao Carrinho
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   );
-}
+};
 
 export default Loja;

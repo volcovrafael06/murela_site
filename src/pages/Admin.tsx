@@ -6,9 +6,22 @@ import poloUniformeImage from '@/assets/images/polo_uniforme_simbolo.png';
 import scrubUniformeImage from '@/assets/images/scrub_uniforme_final.png';
 import profissionaisImage from '@/assets/images/profissionais_uniformizados.png';
 
+// Definição de interface para o Produto no Admin
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  image: string; // Caminho da imagem local ou URL
+  imageUrl?: string; // Campo opcional para URL externa da imagem
+  description: string;
+  sizes: string[];
+  colors: string[];
+  models: string[];
+}
+
 // Simulação de um banco de dados local usando localStorage
-const useLocalStorage = (key, initialValue) => {
-  const [storedValue, setStoredValue] = useState(() => {
+const useLocalStorage = <T,>(key: string, initialValue: T): [T, (value: T | ((prevState: T) => T)) => void] => {
+  const [storedValue, setStoredValue] = useState<T>(() => {
     try {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
@@ -18,7 +31,7 @@ const useLocalStorage = (key, initialValue) => {
     }
   });
 
-  const setValue = (value) => {
+  const setValue = (value: T | ((prevState: T) => T)) => {
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
@@ -32,7 +45,7 @@ const useLocalStorage = (key, initialValue) => {
 };
 
 // Produtos iniciais para demonstração
-const initialProducts = [
+const initialProducts: Product[] = [
   { 
     id: 1, 
     name: 'Camisa Polo Empresarial', 
@@ -70,24 +83,41 @@ function Admin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
-  const [products, setProducts] = useLocalStorage('shopProducts', initialProducts);
-  const [editingProduct, setEditingProduct] = useState(null);
+  const [products, setProducts] = useLocalStorage<Product[]>('shopProducts', initialProducts);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [productToDelete, setProductToDelete] = useState(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   
   const navigate = useNavigate();
 
+  // Check authentication status on component mount
+  useEffect(() => {
+    const authStatus = localStorage.getItem('isAdminAuthenticated');
+    if (authStatus === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
   // Simulação de autenticação simples
-  const handleLogin = (e) => {
+  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Credenciais fixas para demonstração - em produção, use um sistema de autenticação seguro
     if (username === 'admin' && password === 'murela123') {
       setIsAuthenticated(true);
+      localStorage.setItem('isAdminAuthenticated', 'true'); // Set auth flag
       setLoginError('');
     } else {
       setLoginError('Credenciais inválidas. Tente novamente.');
     }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('isAdminAuthenticated'); // Clear auth flag
+    setUsername(''); // Clear username and password fields
+    setPassword('');
+    // navigate('/'); // Optionally navigate to home or login page after logout
   };
 
   // Função para adicionar um novo produto
@@ -108,13 +138,13 @@ function Admin() {
   };
 
   // Função para editar um produto existente
-  const editProduct = (product) => {
+  const editProduct = (product: Product) => {
     setEditingProduct({...product});
     setIsEditing(true);
   };
 
   // Função para confirmar exclusão de um produto
-  const confirmDelete = (product) => {
+  const confirmDelete = (product: Product) => {
     setProductToDelete(product);
     setShowDeleteConfirm(true);
   };
@@ -131,21 +161,39 @@ function Admin() {
 
   // Função para salvar as alterações de um produto
   const saveProduct = () => {
-    if (!editingProduct.name || !editingProduct.price) {
+    if (!editingProduct || !editingProduct.name || typeof editingProduct.price !== 'number') {
+      alert('Nome e preço são obrigatórios e o preço deve ser um número!');
+      return;
+    }
+
+    // Certifique-se de que o ID existe para produtos existentes ou crie um novo para novos produtos
+    const productToSave: Product = {
+      ...editingProduct,
+      id: editingProduct.id || Date.now(), // Garante que o ID exista
+      image: editingProduct.image || '', // Garante que a imagem exista
+      // Garante que imageUrl seja string ou undefined
+      imageUrl: typeof editingProduct.imageUrl === 'string' ? editingProduct.imageUrl : undefined,
+      // Garante que os arrays existam
+      sizes: Array.isArray(editingProduct.sizes) ? editingProduct.sizes : [],
+      colors: Array.isArray(editingProduct.colors) ? editingProduct.colors : [],
+      models: Array.isArray(editingProduct.models) ? editingProduct.models : [],
+    };
+
+    if (!productToSave.name || !productToSave.price) {
       alert('Nome e preço são obrigatórios!');
       return;
     }
 
     let updatedProducts;
-    const existingIndex = products.findIndex(p => p.id === editingProduct.id);
+    const existingIndex = products.findIndex(p => p.id === productToSave.id);
     
     if (existingIndex >= 0) {
       // Atualiza um produto existente
       updatedProducts = [...products];
-      updatedProducts[existingIndex] = editingProduct;
+      updatedProducts[existingIndex] = productToSave;
     } else {
       // Adiciona um novo produto
-      updatedProducts = [...products, editingProduct];
+      updatedProducts = [...products, productToSave];
     }
     
     setProducts(updatedProducts);
@@ -154,7 +202,7 @@ function Admin() {
   };
 
   // Função para lidar com mudanças nos campos do formulário
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setEditingProduct(prev => ({
       ...prev,
@@ -163,7 +211,7 @@ function Admin() {
   };
 
   // Função para lidar com mudanças em arrays (tamanhos, cores, modelos)
-  const handleArrayChange = (field, value) => {
+  const handleArrayChange = (field: keyof Product, value: string) => {
     const values = value.split(',').map(item => item.trim()).filter(item => item);
     setEditingProduct(prev => ({
       ...prev,
@@ -172,31 +220,33 @@ function Admin() {
   };
 
   // Função para simular upload de imagem (em produção, use um serviço de armazenamento real)
-  const handleImageChange = (e) => {
+  const handleImageChange = (e: React.MouseEvent<HTMLButtonElement>) => {
     // Opções de imagens disponíveis no projeto
     const images = [poloUniformeImage, scrubUniformeImage, profissionaisImage];
     
     // Se o usuário inseriu uma URL externa, use-a
-    if (editingProduct.imageUrl && editingProduct.imageUrl.trim() !== '') {
-      setEditingProduct(prev => ({
+    if (editingProduct?.imageUrl && editingProduct.imageUrl.trim() !== '') {
+      setEditingProduct(prev => prev ? {
         ...prev,
-        image: editingProduct.imageUrl
-      }));
+        image: prev.imageUrl || '' // Garante que imageUrl não seja undefined
+      } : null);
       return;
     }
     
     // Caso contrário, alterne entre as imagens disponíveis
-    const currentIndex = images.indexOf(editingProduct.image);
-    const nextIndex = (currentIndex + 1) % images.length;
-    
-    setEditingProduct(prev => ({
-      ...prev,
-      image: images[nextIndex]
-    }));
+    if (editingProduct) {
+      const currentIndex = images.indexOf(editingProduct.image);
+      const nextIndex = (currentIndex + 1) % images.length;
+      
+      setEditingProduct(prev => prev ? {
+        ...prev,
+        image: images[nextIndex]
+      } : null);
+    }
   };
 
   // Função para lidar com a entrada de URL de imagem
-  const handleImageUrlChange = (e) => {
+  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
     setEditingProduct(prev => ({
       ...prev,
@@ -281,10 +331,10 @@ function Admin() {
                   <Eye className="h-4 w-4" /> Ver Loja
                 </button>
                 <button 
-                  onClick={() => setIsAuthenticated(false)}
-                  className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-md transition-colors"
+                  onClick={handleLogout} // Use the new logout handler
+                  className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-md transition-colors flex items-center gap-2"
                 >
-                  Sair
+                  <Lock className="h-4 w-4" /> Sair
                 </button>
               </div>
             </div>
@@ -327,7 +377,7 @@ function Admin() {
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((product) => (
+                  {products.map((product: Product) => (
                     <tr key={product.id} className="border-t border-border">
                       <td className="py-3 px-4">
                         <div className="h-16 w-16 rounded-md overflow-hidden">
@@ -395,7 +445,7 @@ function Admin() {
                         <input 
                           type="text" 
                           name="name"
-                          value={editingProduct.name} 
+                          value={editingProduct.name || ''} 
                           onChange={handleInputChange}
                           className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                           required
@@ -407,7 +457,7 @@ function Admin() {
                         <input 
                           type="number" 
                           name="price"
-                          value={editingProduct.price} 
+                          value={editingProduct.price || 0} 
                           onChange={handleInputChange}
                           step="0.01"
                           min="0"
@@ -420,7 +470,7 @@ function Admin() {
                         <label className="block text-sm font-medium mb-1">Descrição</label>
                         <textarea 
                           name="description"
-                          value={editingProduct.description} 
+                          value={editingProduct.description || ''} 
                           onChange={handleInputChange}
                           rows="3"
                           className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -434,6 +484,18 @@ function Admin() {
                         <div className="flex items-center gap-4">
                           <div className="h-32 w-32 border border-input rounded-md overflow-hidden bg-muted flex items-center justify-center">
                             {editingProduct.image ? (
+                              <img 
+                                src={editingProduct.image} 
+                                alt={editingProduct.name || "Preview"} 
+                                className="h-full w-full object-cover" 
+                              />
+                            ) : editingProduct.imageUrl ? (
+                              <img 
+                                src={editingProduct.imageUrl} 
+                                alt={editingProduct.name || "Preview"} 
+                                className="h-full w-full object-cover" 
+                              />
+                            ) : (
                               <img 
                                 src={editingProduct.image} 
                                 alt="Preview" 
@@ -473,7 +535,7 @@ function Admin() {
                         <label className="block text-sm font-medium mb-1">Tamanhos (separados por vírgula)</label>
                         <input 
                           type="text" 
-                          value={editingProduct.sizes.join(', ')} 
+                          value={editingProduct.sizes?.join(', ') || ''} 
                           onChange={(e) => handleArrayChange('sizes', e.target.value)}
                           placeholder="P, M, G, GG"
                           className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -484,7 +546,7 @@ function Admin() {
                         <label className="block text-sm font-medium mb-1">Cores (separadas por vírgula)</label>
                         <input 
                           type="text" 
-                          value={editingProduct.colors.join(', ')} 
+                          value={editingProduct.colors?.join(', ') || ''} 
                           onChange={(e) => handleArrayChange('colors', e.target.value)}
                           placeholder="Azul, Preto, Branco"
                           className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -495,7 +557,7 @@ function Admin() {
                         <label className="block text-sm font-medium mb-1">Modelos (separados por vírgula)</label>
                         <input 
                           type="text" 
-                          value={editingProduct.models.join(', ')} 
+                          value={editingProduct.models?.join(', ') || ''} 
                           onChange={(e) => handleArrayChange('models', e.target.value)}
                           placeholder="Slim, Regular, Tradicional"
                           className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -532,7 +594,7 @@ function Admin() {
               <div className="bg-background rounded-lg shadow-lg max-w-md w-full">
                 <div className="p-6">
                   <h3 className="text-xl font-semibold text-foreground mb-4">Confirmar Exclusão</h3>
-                  <p className="mb-6">Tem certeza que deseja excluir o produto <strong>{productToDelete.name}</strong>?</p>
+                  <p className="mb-6">Tem certeza que deseja excluir o produto <strong>{productToDelete?.name}</strong>?</p>
                   
                   <div className="flex justify-end gap-4">
                     <button 

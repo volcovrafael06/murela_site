@@ -170,6 +170,21 @@ export const calculateShipping = async (request: ShippingRequest): Promise<Shipp
   });
 };
 
+// Simulação da API de Upload de Imagem
+export const uploadImage = async (imageFile: File): Promise<{ success: boolean; url?: string; message?: string }> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      if (imageFile) {
+        // Simula o upload e retorna uma URL local
+        const imageUrl = URL.createObjectURL(imageFile);
+        resolve({ success: true, url: imageUrl });
+      } else {
+        resolve({ success: false, message: 'Nenhuma imagem fornecida.' });
+      }
+    }, 1000);
+  });
+};
+
 // Função para buscar endereço por CEP
 export const fetchAddressByCEP = async (cep: string): Promise<any> => {
   // Simulação de busca de CEP

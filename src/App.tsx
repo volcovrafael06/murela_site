@@ -1,6 +1,7 @@
 import './App.css';
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Routes, Route } from 'react-router-dom';
+import Loja from './pages/Loja';
 import logoImage from '@/assets/logo/murela_logo_official.png'; // Use alias
 // Import updated fabric image
 import fabricImage from '@/assets/images/fabric_v2.png'; 
@@ -110,7 +111,11 @@ function App() {
 
   return (
     <div className="App bg-background text-foreground">
-      <header className={`navbar fixed w-full z-50 transition-all duration-300 ${scrolled ? 'navbar-scrolled' : ''}`}>
+      <Routes>
+        <Route path="/loja" element={<Loja />} />
+        <Route path="/" element={
+          <>
+            <header className={`navbar fixed w-full z-50 transition-all duration-300 ${scrolled ? 'navbar-scrolled' : ''}`}>
         <div className="container mx-auto px-4 flex justify-between items-center">
           <div className="logo-container">
             <img src={logoImage} alt="Murela Brands Logo" className="logo-image" />
@@ -120,6 +125,7 @@ function App() {
               { id: 'home', label: 'Início' },
               { id: 'diferenciais', label: 'Diferenciais' },
               { id: 'tecnologia', label: 'Tecnologia' },
+              { id: 'loja', label: 'Loja Virtual' },
               { id: 'portfolio', label: 'Portfólio' },
               { id: 'processo', label: 'Processo' },
               { id: 'contato', label: 'Contato' },
@@ -133,12 +139,7 @@ function App() {
                 <span>{item.label}</span>
               </a>
             ))}
-            <a 
-              href="/loja" 
-              className="nav-link capitalize"
-            >
-              <span>Loja Virtual</span>
-            </a>
+
           </nav>
           <div className="flex items-center space-x-4">
             <button 
@@ -155,6 +156,7 @@ function App() {
               { id: 'home', label: 'Início' },
               { id: 'diferenciais', label: 'Diferenciais' },
               { id: 'tecnologia', label: 'Tecnologia' },
+              { id: 'loja', label: 'Loja Virtual' },
               { id: 'portfolio', label: 'Portfólio' },
               { id: 'processo', label: 'Processo' },
               { id: 'contato', label: 'Contato' },
@@ -168,12 +170,7 @@ function App() {
                 {item.label}
               </a>
             ))}
-            <a 
-              href="/loja" 
-              className="mobile-menu-link"
-            >
-              Loja Virtual
-            </a>
+
         </div>
       </header>
 
@@ -251,41 +248,20 @@ function App() {
 
       <section id="loja" className="py-16 md:py-24 bg-background">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-primary mb-4">Loja Virtual</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-primary mb-4">Nossa Loja Virtual</h2>
           <div className="h-1 w-20 mx-auto bg-primary mb-12"></div>
-          <p className="text-muted-foreground text-center max-w-3xl mx-auto mb-16 text-lg">
-            Conheça nossa linha de produtos e faça seu pedido diretamente pelo site. Oferecemos uniformes de alta qualidade para diversos segmentos.
+          <p className="text-muted-foreground text-center max-w-3xl mx-auto mb-12 text-lg">
+            Explore nossa coleção de uniformes profissionais e faça suas compras online de forma rápida e segura.
           </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* shopProducts.map((product) => (
-              <div key={product.id} className="bg-card rounded-lg shadow-md overflow-hidden transition duration-300 transform hover:-translate-y-1 hover:shadow-lg">
-                <div className="h-64 overflow-hidden">
-                  <img 
-                    src={product.image} 
-                    alt={product.name} 
-                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" 
-                  />
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-card-foreground mb-2">{product.name}</h3>
-                  <p className="text-muted-foreground mb-4">{product.description}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-primary">R$ {product.price.toFixed(2)}</span>
-                    <button 
-                      onClick={() => addToCart(product)}
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 px-4 rounded-md transition duration-300 flex items-center gap-2"
-                    >
-                      <ShoppingCart className="h-4 w-4" /> Adicionar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )) */}
-            <p className="text-muted-foreground text-center col-span-full">Em breve, nossa loja virtual estará disponível com uma variedade de produtos!</p>
+          <div className="text-center">
+            <a href="/loja" className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-3 px-6 rounded-lg transition duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1">
+              Ir para a Loja
+            </a>
           </div>
         </div>
       </section>
+
+
 
       {/* Portfolio Section with final user image */}
       <section id="portfolio" className="py-16 md:py-24 bg-background">
@@ -488,89 +464,9 @@ function App() {
         </div>
       )}
 
-      {/* Carrinho de Compras Modal */}
-      {cartOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-background rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-semibold text-foreground">Carrinho de Compras</h3>
-                <button 
-                  onClick={() => setCartOpen(false)} 
-                  className="text-muted-foreground hover:text-foreground"
-                  aria-label="Fechar carrinho"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-              
-              {cartItems.length === 0 ? (
-                <div className="text-center py-8">
-                  <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Seu carrinho está vazio</p>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-4 mb-6">
-                    {cartItems.map((item) => (
-                      <div key={item.id} className="flex items-center gap-4 border-b border-border pb-4">
-                        <div className="h-16 w-16 flex-shrink-0 rounded-md overflow-hidden">
-                          <img 
-                            src={item.image} 
-                            alt={item.name} 
-                            className="h-full w-full object-cover" 
-                          />
-                        </div>
-                        <div className="flex-grow">
-                          <h4 className="text-sm font-medium text-foreground">{item.name}</h4>
-                          <div className="flex justify-between items-center mt-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">Qtd: {item.quantity}</span>
-                              <span className="text-sm font-medium text-foreground">R$ {(item.price * item.quantity).toFixed(2)}</span>
-                            </div>
-                            <button 
-                              onClick={() => removeFromCart(item.id)}
-                              className="text-red-500 hover:text-red-700 transition-colors"
-                              aria-label="Remover item"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="border-t border-border pt-4">
-                    <div className="flex justify-between items-center mb-6">
-                      <span className="text-foreground font-medium">Total</span>
-                      <span className="text-lg font-bold text-primary">R$ {cartTotal.toFixed(2)}</span>
-                    </div>
-                    
-                    <div className="flex gap-4">
-                      <button 
-                        onClick={() => setCartOpen(false)}
-                        className="flex-1 px-4 py-2 border border-input rounded-md hover:bg-accent transition-colors"
-                      >
-                        Continuar Comprando
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setCartOpen(false);
-                          navigate('/checkout');
-                        }}
-                        className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2 px-4 rounded-md transition duration-300"
-                      >
-                        Finalizar Pedido
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+        </>
+        } />
+      </Routes>
     </div>
   );
 }
